@@ -13,6 +13,7 @@
 import pygame
 import random
 import math
+import sys
 
 #############################################################################################################
 #                                                                                                           #
@@ -26,7 +27,7 @@ background_image = "Hintergrund All 2.jpg"
 
 WORLD_WIDTH, WORLD_HEIGHT = 600, 400
 frames = 60
-#COLOURS
+#COLOURS AND FONDS
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -85,6 +86,7 @@ class Player(Actor):
             pygame.Rect(x-w/3,y+h/13,4/6*w,2/5*h),
             pygame.Rect(x-w/2,y+w/5,w,h/6),
             ]
+        self.name = "Player 1"
 
     def move(self, speed_x, speed_y):
         super().move(speed_x, speed_y)
@@ -99,10 +101,6 @@ class Player(Actor):
             
         self.position_x = max(0+PLAYER_WIDTH/2, min(self.position_x, WORLD_WIDTH-PLAYER_WIDTH/2))       
         self.position_y = max(0+PLAYER_HEIGHT/2, min(self.position_y, WORLD_HEIGHT-PLAYER_HEIGHT/2)) 
-
-    
-
-   
 
 class Enemy(Actor):
     def __init__(self, center_x, center_y, width, height, speed, appearance):
@@ -144,23 +142,30 @@ def set_screen(width,height,caption,image,fps):
     clock = pygame.time.Clock()   
     clock.tick(fps)
 
-def main_menue(surface):
-    font_heading = pygame.font.Font(None, 70)
-    font_menue = pygame.font.Font(None, 36)
-    heading_surface = font_heading.render(heading, True, WHITE)
-    menue_surface = font_menue.render(menue, True, WHITE)
-    heading =  " SPACE INVADOR "
-    menue = "Press SPACE to start"
+def get_player_name(surface):
+    global main
+    global player_name
+    player_name = "" + player_name
+    txt_menue = "Player 1: "
+
+    for event in pygame.event.get(): 
+        if event.type == pygame.QUIT:
+            main = False
+        elif event.type == pygame.KEYDOWN:
+            
+            player_name = pygame.key.name(event.key)        
+
+
+
+    main_surface = f_text.render(txt_menue, True, WHITE)
+    name_surface = f_text.render(player_name, True, WHITE)
+    main_pos = main_surface.get_rect()
+    name_pos = name_surface.get_rect()
+    main_pos.center = (WORLD_WIDTH // 2, WORLD_HEIGHT // 2)
+    name_pos.center = (WORLD_WIDTH // 2 + 50, WORLD_HEIGHT // 2)
+    screen.blit(main_surface, main_pos)
+    screen.blit(name_surface, name_pos)
     
-    menue_surface = font_menue.render(menue, True, WHITE)
-    menue_rect = menue_surface.get_rect().move(100, 100)
-    heading_rect = heading_surface.get_rect(topleft = (5,10))
-   
-    menue_rect = menue_surface.get_rect(topleft = (100,100))
-
-    screen.blit(heading, heading_rect)
-    screen.blit(menue, menue_rect)
-
 
 def set_player(center_x, center_y, width, height, speed, appearance):
     return Player(center_x, center_y, width, height, speed, appearance)
@@ -223,6 +228,12 @@ def score_counter(counter, score):
     score += counter
     return score
 
+def set_fonds():
+    global f_heading
+    global f_text
+    f_heading = pygame.font.Font(None, 70)
+    f_text = pygame.font.Font(None, 36)
+
 #############################################################################################################
 #                                                                                                           #
 #                                                 MAIN CODE                                                 #
@@ -230,18 +241,26 @@ def score_counter(counter, score):
 #############################################################################################################
 
 pygame.init()
+pygame.font.init()
 set_screen(WORLD_WIDTH,WORLD_HEIGHT,game_name,background_image,frames)
+set_fonds()
 main = True
 
+
+
 while main:
+    
     for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     main = False
+
     screen.blit(background,(0,0))
-    main_menue(screen)
+    player = set_player((WORLD_WIDTH/2), (WORLD_HEIGHT-PLAYER_HEIGHT), PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player_image)
+    get_player_name(screen)
+
     start = pygame.key.get_pressed()
     if start[pygame.K_SPACE]:
-        player = set_player((WORLD_WIDTH/2), (WORLD_HEIGHT-PLAYER_HEIGHT), PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player_image)
+        
         enemies = []  
         score = 0
 
@@ -251,6 +270,7 @@ while main:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                    main = False
 
             screen.blit(background,(0,0))
             screen.blit(player.appearance, (player.position_x-PLAYER_WIDTH/2-1, player.position_y-PLAYER_HEIGHT/2))
