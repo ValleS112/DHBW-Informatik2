@@ -24,14 +24,17 @@ import sys
 #GAME SETTINGS   
 game_name = "Space invador"
 background_image = "Hintergrund All 2.jpg"
+loading_screen_image = "Ladebildschirm.png"
 
 WORLD_WIDTH, WORLD_HEIGHT = 600, 400
-frames = 60
+FRAMES = 60
+
 #COLOURS AND FONDS
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0,255,0)
+WHITE_TRANSP = (0,0,0,50)
 
 # ACTOR SETTING
 player_image = "Spaceship 1.png"
@@ -130,42 +133,31 @@ class Enemy(Actor):
 #                                                                                                           #
 #############################################################################################################
 
-# Funktionen zum Erstellen der Spielwelt
-def set_screen(width,height,caption,image,fps):
+def start_screen(surface,width, height, image, time):
+    surface = pygame.display.set_mode((width, height))
+    image = pygame.image.load(image).convert()
+    loeading_screen = pygame.transform.scale(image,(width,height))
+    surface.bit(loeading_screen,)
+    pygame.display.flip
+    pygame.time.delay(time)
+
+def set_screen(width,height,caption,image):
     global clock
     global screen
     global background
+    global main
+    global names
+    global loop
     screen = pygame.display.set_mode((width, height))
-    pygame.display.set_caption(caption)    
     image = pygame.image.load(image).convert()
     background = pygame.transform.scale(image,(width,height))
-    clock = pygame.time.Clock()   
-    clock.tick(fps)
+       
+    clock = pygame.time.Clock()
+    pygame.display.set_caption(caption)   
+    main = True
+    names = False
+    loop = True
 
-def get_player_name(surface):
-    global main
-    global player_name
-    player_name = "" + player_name
-    txt_menue = "Player 1: "
-
-    for event in pygame.event.get(): 
-        if event.type == pygame.QUIT:
-            main = False
-        elif event.type == pygame.KEYDOWN:
-            
-            player_name = pygame.key.name(event.key)        
-
-
-
-    main_surface = f_text.render(txt_menue, True, WHITE)
-    name_surface = f_text.render(player_name, True, WHITE)
-    main_pos = main_surface.get_rect()
-    name_pos = name_surface.get_rect()
-    main_pos.center = (WORLD_WIDTH // 2, WORLD_HEIGHT // 2)
-    name_pos.center = (WORLD_WIDTH // 2 + 50, WORLD_HEIGHT // 2)
-    screen.blit(main_surface, main_pos)
-    screen.blit(name_surface, name_pos)
-    
 
 def set_player(center_x, center_y, width, height, speed, appearance):
     return Player(center_x, center_y, width, height, speed, appearance)
@@ -193,11 +185,27 @@ def move_enemy(list):
                 list.remove(enemy)
 
 def hud_menue():
-    font = pygame.font.Font(None, 36)
-    highscore_txt =  " Highscore: "
-    text_surface = font.render(highscore_txt+str(int(score)), True, WHITE)
-    text_rect = text_surface.get_rect(topleft = (5,10))
-    screen.blit(text_surface, text_rect)
+    global score 
+    score += (1/10)
+
+    hud_srf = pygame.Surface((WORLD_WIDTH,40),pygame.SRCALPHA)
+    hud_srf.fill(BLACK)
+    hud_srf.set_alpha(120)
+
+    screen.blit(hud_srf, (0,0))
+
+    text_srf = f_text.render("Score : "+str(int(score)), True, WHITE)
+    text_rect = text_srf.get_rect(topleft = (5,10))
+
+    name_srf = f_text.render("Player: "+name, True, WHITE)
+    name_rect = name_srf.get_rect(topleft = ((WORLD_HEIGHT-(len(name)+13),10)))
+
+    screen.blit(name_srf, name_rect)
+    screen.blit(text_srf, text_rect)
+
+def score_counter(counter, score):
+    score += counter
+    return score
 
 def key_event():
     keys = pygame.key.get_pressed()
@@ -224,15 +232,66 @@ def collision_event(obj1,obj2):
         text_rect = text_surface.get_rect(center = (WORLD_WIDTH//2, WORLD_HEIGHT//2))
         screen.blit(text_surface, text_rect)
 
-def score_counter(counter, score):
-    score += counter
-    return score
+
 
 def set_fonds():
     global f_heading
     global f_text
     f_heading = pygame.font.Font(None, 70)
     f_text = pygame.font.Font(None, 36)
+
+def get_player_name(surface): 
+
+    global start
+    global name
+
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN and len(name) > 0 :
+                start = True
+            elif event.key == pygame.K_BACKSPACE:
+                name = name[:-1]
+            elif ((65 <= event.key <= 90) or (97 <= event.key <= 122)) and len(name) <= 9:           
+                name += event.unicode              
+        elif event.type == pygame.QUIT:
+                pygame.quit() 
+
+    txt_menue = "Player name: "
+    
+                
+   
+
+    text_srf = f_text.render(txt_menue, True, WHITE)
+    text_pos = text_srf.get_rect()   
+    text_pos.topleft = (100, WORLD_HEIGHT /2 - text_pos.height/2)
+
+    input_srf = f_text.render(name,True,WHITE)
+    input_pos = input_srf.get_rect()  
+    input_pos.topleft = (100+text_pos.width, WORLD_HEIGHT /2 - input_pos.height/2)
+
+    menue_srf = pygame.Surface((WORLD_WIDTH,WORLD_HEIGHT),pygame.SRCALPHA)
+    menue_srf.fill(BLACK)
+    menue_srf.set_alpha(120)
+
+    screen.blit(menue_srf, (0,0))
+    screen.blit(text_srf, text_pos) 
+    screen.blit(input_srf, input_pos) 
+
+    pygame.display.flip()
+    
+    
+
+    
+def check_quit():
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+                
+    
+
+    
+
 
 #############################################################################################################
 #                                                                                                           #
@@ -242,52 +301,42 @@ def set_fonds():
 
 pygame.init()
 pygame.font.init()
-set_screen(WORLD_WIDTH,WORLD_HEIGHT,game_name,background_image,frames)
+set_screen(WORLD_WIDTH,WORLD_HEIGHT,game_name,background_image)
+#start_screen(screen, WORLD_WIDTH, WORLD_HEIGHT,loading_screen_image,3000)
 set_fonds()
-main = True
-
-
-
+start = False
+name = ""
 while main:
     
-    for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    main = False
-
-    screen.blit(background,(0,0))
     player = set_player((WORLD_WIDTH/2), (WORLD_HEIGHT-PLAYER_HEIGHT), PLAYER_WIDTH, PLAYER_HEIGHT, PLAYER_SPEED, player_image)
-    get_player_name(screen)
+    screen.blit(background,(0,0))
 
-    start = pygame.key.get_pressed()
-    if start[pygame.K_SPACE]:
-        
+    get_player_name(screen)
+    
+    if start == True:
         enemies = []  
         score = 0
 
         running = True
         while running:
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                    main = False
-
             screen.blit(background,(0,0))
             screen.blit(player.appearance, (player.position_x-PLAYER_WIDTH/2-1, player.position_y-PLAYER_HEIGHT/2))
             # player.draw_position(screen)
             # player.draw_body(screen,GREEN)
-            hud_menue()
-            score = score_counter(1/30, score)
-            key_event()
-            
+            hud_menue()            
+            key_event()            
             create_enemy(ENEMY_INTERVAL)     
             move_enemy(enemies)
             for enemy in enemies:
-                collision_event(player.body,enemy.body) 
-            
+                collision_event(player.body,enemy.body)             
+                     
+            check_quit()
             pygame.display.flip()
-            clock.tick(60)
-    pygame.display.flip()        
+            clock.tick(FRAMES)
+    check_quit()
+    pygame.display.flip()
+    clock.tick(FRAMES)            
 pygame.quit()
     
     
